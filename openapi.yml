@@ -1,0 +1,113 @@
+openapi: "3.0.0"
+info:
+  title: Advanced API Rate Limiter
+  description: |
+    A distributed rate limiting system supporting multiple algorithms:
+
+    - **Token Bucket**: Allows bursts up to capacity, refills at constant rate
+    - **Leaky Bucket**: Smooths output by leaking requests at constant rate
+    - **Sliding Window Log**: Precise per-IP tracking via sorted set of timestamps
+    - **Sliding Window Counter**: Simple counter with TTL (memory-efficient)
+
+    All algorithms use **atomic Lua scripts** in Redis for race-condition-free operation.
+    Falls back to in-memory storage if Redis is unavailable.
+  version: 2.0.0
+  contact:
+    name: Abhishek Kalme
+    url: https://github.com/abhishekkalme
+servers:
+  - url: http://localhost:3000
+    description: Local development
+  - url: http://localhost:80
+    description: Via Nginx load balancer (3 instances)
+paths:
+  /:
+    get:
+      summary: Welcome & API info
+      responses:
+        "200":
+          description: API information
+  /api/resource:
+    get:
+      summary: Rate-limited protected resource
+      description: Returns a JSON response with access granted message. Rate limited per IP (default: 10 req/min).
+      parameters:
+        - name: X-Forwarded-For
+          in: header
+          schema:
+            type: string
+          description: Client IP (used for rate limiting)
+        - name: X-API-Key
+          in: header
+          schema:
+            type: string
+          description: API key for per-user rate limiting (higher limits)
+      responses:
+        "200":
+          description: Access granted
+          headers:
+            RateLimit-Limit:
+              schema:
+                type: integer
+              description: Max requests allowed in the window
+            RateLimit-Remaining:
+              schema:
+                type: integer
+              description: Requests remaining in the window
+            RateLimit-Reset:
+              schema:
+                type: integer
+              description: Unix timestamp when the limit resets
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  timestamp:
+                    type: string
+                    format: date-time
+                  instance:
+                    type: string
+        "429":
+          description: Rate limit exceeded
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Seconds to wait before retrying
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  retryAfter:
+                    type: integer
+                  current:
+                    type: integer
+                  limit:
+                    type: integer
+  /health:
+    get:
+      summary: Health check endpoint
+      responses:
+        "200":
+          description: Service healthy
+        "503":
+          description: Service degraded (e.g., Redis unavailable)
+  /metrics:
+    get:
+      summary: Prometheus metrics
+      description: Exposes Prometheus-compatible metrics for scraping
+      responses:
+        "200":
+          description: Prometheus metrics in text format
+  /docs:
+    get:
+      summary: Swagger UI documentation
+      responses:
+        "200":
+          description: Swagger UI HTML page

@@ -1,0 +1,178 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rate Limiter Dashboard</title>
+<link rel="stylesheet" href="/css/dashboard.css">
+</head>
+<body>
+<div class="container">
+  <header>
+    <div>
+      <h1>Rate Limiter Dashboard</h1>
+      <div class="subtitle">Real-time visualization of distributed rate limiting</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <div class="health-indicator">
+        <span class="health-dot" id="healthDot"></span>
+        <span id="healthText">Checking...</span>
+      </div>
+      <span class="badge badge-ok" id="strategyBadge">token-bucket</span>
+      <span class="badge badge-neutral" id="storageBadge">storage: ?</span>
+    </div>
+  </header>
+
+  <div class="summary-row">
+    <div class="summary-item">
+      <div class="summary-icon blue">&#9651;</div>
+      <div class="summary-text">
+        <div class="summary-value" id="sumTotal">0</div>
+        <div class="summary-label">Total Requests</div>
+      </div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-icon green">&#10003;</div>
+      <div class="summary-text">
+        <div class="summary-value" style="color:#22c55e" id="sumAllowed">0</div>
+        <div class="summary-label">Allowed</div>
+      </div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-icon red">&#10007;</div>
+      <div class="summary-text">
+        <div class="summary-value" style="color:#ef4444" id="sumBlocked">0</div>
+        <div class="summary-label">Blocked (429)</div>
+      </div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-icon yellow">%</div>
+      <div class="summary-text">
+        <div class="summary-value" style="color:#eab308" id="sumRate">-</div>
+        <div class="summary-label">Allow Rate</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Send Request</h2>
+      <div class="controls-row">
+        <div class="control-group">
+          <label>Algorithm</label>
+          <select id="strategySelect">
+            <option value="token-bucket">Token Bucket</option>
+            <option value="leaky-bucket">Leaky Bucket</option>
+            <option value="sliding-window-log">Sliding Window Log</option>
+            <option value="sliding-window-counter">Sliding Window Counter</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label>API Key (user tier)</label>
+          <input type="text" id="apiKeyInput" placeholder="Optional" style="width:140px;">
+        </div>
+        <div class="control-group">
+          <label>Custom IP</label>
+          <input type="text" id="ipInput" placeholder="192.168.1.100 (default)" style="width:140px;">
+        </div>
+      </div>
+      <div class="btn-group" style="margin-top:16px;">
+        <button class="btn btn-primary" id="fireBtn">Send Request</button>
+        <button class="btn btn-spam" id="autoBtn">Auto-Send (10)</button>
+        <span class="auto-progress" id="autoProgress"></span>
+        <button class="btn btn-secondary" id="clearBtn">Clear History</button>
+        <span class="shortcut-hint"><kbd>Enter</kbd> to send</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Current Limit Status</h2>
+      <div class="stats-row">
+        <div class="stat">
+          <div class="value" id="statCurrent">0</div>
+          <div class="label">Used</div>
+        </div>
+        <div class="stat">
+          <div class="value ok" id="statLimit">10</div>
+          <div class="label">Limit</div>
+        </div>
+        <div class="stat">
+          <div class="value ok" id="statRemaining">10</div>
+          <div class="label">Remaining</div>
+        </div>
+        <div class="stat">
+          <div class="value" id="statRetryAfter">0</div>
+          <div class="label">Reset In (s)</div>
+        </div>
+      </div>
+      <div class="bar-container">
+        <div class="bar-fill ok" id="usageBar" style="width:0%"></div>
+        <div class="bar-label" id="usageBarLabel">0%</div>
+      </div>
+      <div class="last-response" id="lastResponse">
+        <div class="last-response-dot idle" id="lastDot"></div>
+        <div class="last-response-info" id="lastInfo">No requests sent yet</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Request History</h2>
+    <div class="history-container">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Time</th>
+            <th>Method</th>
+            <th>Status</th>
+            <th>Latency</th>
+            <th>Used / Limit</th>
+            <th>Remaining</th>
+            <th>Reset In</th>
+            <th>Algorithm / Tier</th>
+          </tr>
+        </thead>
+        <tbody id="historyBody">
+        </tbody>
+      </table>
+      <div class="empty-state" id="emptyState">
+        <div class="empty-state-icon">&#9889;</div>
+        <div class="empty-state-text">No requests sent yet</div>
+        <div class="empty-state-hint">Click <strong>"Send Request"</strong> or press <kbd>Enter</kbd> to start testing rate limits.<br>Try sending 10 requests quickly to see the limiter in action.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Algorithm Visualizations</h2>
+    <div style="font-size:12px;color:#64748b;margin-bottom:12px;">Live animation of each algorithm &mdash; click a canvas to simulate a request</div>
+    <div class="viz-grid">
+      <div class="viz-card">
+        <canvas id="viz-token-bucket"></canvas>
+        <div class="viz-title">Token Bucket <span class="viz-badge ok" id="badge-token-bucket">ready</span></div>
+        <div class="algo-desc">Tokens refill at a steady rate. Each request consumes one token. When empty, requests are blocked until tokens refill.</div>
+      </div>
+      <div class="viz-card">
+        <canvas id="viz-leaky-bucket"></canvas>
+        <div class="viz-title">Leaky Bucket <span class="viz-badge ok" id="badge-leaky-bucket">ready</span></div>
+        <div class="algo-desc">Requests fill a bucket that leaks at a constant rate. When the bucket overflows, new requests are rejected.</div>
+      </div>
+      <div class="viz-card">
+        <canvas id="viz-sliding-window-log"></canvas>
+        <div class="viz-title">Sliding Window Log <span class="viz-badge ok" id="badge-sliding-window-log">ready</span></div>
+        <div class="algo-desc">Tracks exact timestamps of each request within a rolling time window. Old entries expire automatically.</div>
+      </div>
+      <div class="viz-card">
+        <canvas id="viz-sliding-window-counter"></canvas>
+        <div class="viz-title">Sliding Window Counter <span class="viz-badge ok" id="badge-sliding-window-counter">ready</span></div>
+        <div class="algo-desc">Weighted count from the previous and current window. Approximates the sliding window with lower memory overhead.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="/js/dashboard.js"></script>
+</body>
+</html>

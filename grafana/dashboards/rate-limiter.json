@@ -1,0 +1,41 @@
+{
+  "title": "Rate Limiter Dashboard",
+  "uid": "rate-limiter",
+  "panels": [
+    {
+      "title": "Requests per Second",
+      "type": "graph",
+      "targets": [
+        { "expr": "rate(rate_limiter_http_request_duration_ms_count[1m])", "legendFormat": "{{route}}" }
+      ]
+    },
+    {
+      "title": "Rate Limit Decisions",
+      "type": "graph",
+      "targets": [
+        { "expr": "rate(rate_limiter_decisions_total[1m])", "legendFormat": "{{strategy}} - {{allowed}}" }
+      ]
+    },
+    {
+      "title": "Request Latency (p95)",
+      "type": "graph",
+      "targets": [
+        { "expr": "histogram_quantile(0.95, rate(rate_limiter_http_request_duration_ms_bucket[5m]))", "legendFormat": "{{route}}" }
+      ]
+    },
+    {
+      "title": "Active Requests",
+      "type": "gauge",
+      "targets": [
+        { "expr": "rate_limiter_active_requests" }
+      ]
+    },
+    {
+      "title": "Redis Health",
+      "type": "stat",
+      "targets": [
+        { "expr": "rate_limiter_redis_health" }
+      ]
+    }
+  ]
+}
