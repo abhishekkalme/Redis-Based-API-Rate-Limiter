@@ -62,7 +62,8 @@ curl http://localhost:3000/api/resource
 
 | Endpoint | Rate Limited | Description |
 |---|---|---|
-| `GET /` | No | API info & available strategies |
+| `GET /` | No | Dashboard UI (default landing page) |
+| `GET /api/info` | No | API info & available strategies |
 | `GET /api/resource` | Yes (10/min per IP) | Protected resource |
 | `GET /api/resource` (with `X-API-Key` header) | Yes (20/min per user) | Higher per-user limit |
 | `GET /health` | No | Health check with rate limiter status |

@@ -59,7 +59,7 @@ export async function createApp() {
   }));
 
   // Public welcome route (no rate limit)
-  app.get('/', (_req, res) => {
+  app.get('/api/info', (_req, res) => {
     res.json({
       name: 'Advanced API Rate Limiter',
       version: '2.0.0',
