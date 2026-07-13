@@ -22,7 +22,7 @@ RUN npm ci --only=production --ignore-scripts
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/src/lua ./dist/lua
-COPY --from=builder /app/public ./public
+COPY public/ ./public
 
 USER node
 

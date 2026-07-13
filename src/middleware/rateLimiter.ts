@@ -28,8 +28,8 @@ export class RateLimiterMiddleware {
 
   private async initialize() {
     try {
+      const client = await getRedisClient();
       if (isRedisAvailable()) {
-        const client = await getRedisClient();
         this.storage = new RedisStorage(client);
         redisHealth.set(1);
         logger.info('Rate limiter using Redis storage');
@@ -153,5 +153,18 @@ export class RateLimiterMiddleware {
       storage: this.storage?.constructor.name ?? 'not initialized',
       strategies: Array.from(this.strategies.keys()),
     };
+  }
+
+  async syncStorage() {
+    try {
+      const client = await getRedisClient();
+      if (isRedisAvailable() && !(this.storage instanceof RedisStorage)) {
+        this.storage = new RedisStorage(client);
+        redisHealth.set(1);
+        logger.info('Rate limiter switched to Redis storage');
+      }
+    } catch {
+      // keep current storage
+    }
   }
 }

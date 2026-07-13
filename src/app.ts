@@ -91,6 +91,7 @@ export async function createApp() {
       const client = await getRedisClient();
       await client.ping();
       redisHealth.set(1);
+      rateLimiter.syncStorage();
     } catch {
       redisHealth.set(0);
       logger.warn('Redis health check failed');
