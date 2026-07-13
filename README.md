@@ -133,6 +133,50 @@ Nginx (:80)
 
 
 
+## Deploy to a Docker-Friendly PaaS
+
+All three options below run your existing `Dockerfile` unchanged and preserve the
+distributed Redis rate limiter. The only thing they don't run is
+`docker-compose` itself, so Redis (and optionally Prometheus/Grafana) are added
+as platform-native services instead of compose services.
+
+> **Before deploying:** copy `.env.example` to `.env` and fill in values.
+> On every platform below, `PORT` is injected automatically by the platform.
+
+### Railway (full stack, closest to docker-compose)
+
+Railway runs the `Dockerfile` directly and lets you add each service as its own
+Railway service in one project.
+
+1. Create a project and add a **service** from your GitHub repo (Railway auto-detects the `Dockerfile`).
+2. Add a **Redis** plugin to the project and link it to the app service — Railway injects `REDIS_URL` automatically.
+3. (Optional) Add **Prometheus** (`prom/prometheus`, mount `prometheus.yml`) and **Grafana** (`grafana/grafana`, mount `grafana/`) services in the same project for the full monitoring stack.
+4. `railway.json` is already committed — it sets the Docker builder, `/health` healthcheck, and restarts on failure.
+5. Deploy: `railway up` (or push to the linked branch).
+
+The app reads `REDIS_URL` from the environment, so no code changes are needed.
+
+### Fly.io (multi-region, machines)
+
+1. `fly.toml` is committed — it builds with the `Dockerfile`, exposes port 3000, and health-checks `/health`.
+2. Provision Redis (Fly Redis is Upstash-backed) and attach the URL as a secret:
+   ```bash
+   fly redis create
+   fly secrets set REDIS_URL=<url-from-previous-step> REDIS_TLS=true
+   ```
+3. (Optional) Deploy Prometheus/Grafana as separate Fly apps using their public images.
+4. Deploy: `fly deploy`.
+
+### Render (simplest, app + managed Redis)
+
+1. Create a **Web Service** → link repo → choose **Docker** as the environment (uses `Dockerfile`).
+2. Add a **Redis** managed add-on; Render injects `REDIS_URL` into the web service.
+3. Prometheus/Grafana are **not** part of Render's free tier — run them locally or via a separate host if you need the full monitoring stack.
+4. Set `NODE_ENV=production` in the service's environment variables.
+
+For every platform, the healthcheck at `/health` gates traffic, and the dashboard
+is served at `/dashboard` (or `/ui`) on the same host.
+
 ## Load Testing
 
 Requires [k6](https://k6.io/):
