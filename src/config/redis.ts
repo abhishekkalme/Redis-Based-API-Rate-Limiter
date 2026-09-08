@@ -19,10 +19,15 @@ export async function getRedisClient(): Promise<RedisClientType> {
 
   logger.info({ target: redactedTarget(appConfig.redisUrl) }, 'Connecting to Redis');
 
+  // rediss:// already implies TLS; setting socket.tls on top causes node-redis
+  // to throw (tls option mismatch with URL protocol).
+  const tlsFromScheme = appConfig.redisUrl.startsWith('rediss://');
+  const useTlsSocket = appConfig.redisEnableTls && !tlsFromScheme;
+
   client = createClient({
     url: appConfig.redisUrl,
     socket: {
-      ...(appConfig.redisEnableTls ? { tls: {} as any } : {}),
+      ...(useTlsSocket ? { tls: {} as any } : {}),
       connectTimeout: 5000,
       reconnectStrategy: false,
     } as any,

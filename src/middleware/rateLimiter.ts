@@ -38,10 +38,10 @@ export class RateLimiterMiddleware {
         redisHealth.set(0);
         logger.warn('Rate limiter using in-memory storage (not distributed)');
       }
-    } catch {
+    } catch (err) {
       this.storage = new MemoryStorage();
       redisHealth.set(0);
-      logger.warn('Rate limiter using in-memory storage (not distributed)');
+      logger.error({ err }, 'Rate limiter initialization failed, using in-memory storage (not distributed)');
     }
 
     this.strategies.set('default', createStrategy(this.config.default));
