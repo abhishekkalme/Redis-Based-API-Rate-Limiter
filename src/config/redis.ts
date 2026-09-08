@@ -24,6 +24,7 @@ export async function getRedisClient(): Promise<RedisClientType> {
     socket: {
       ...(appConfig.redisEnableTls ? { tls: {} as any } : {}),
       connectTimeout: 5000,
+      reconnectStrategy: false,
     } as any,
   });
 
