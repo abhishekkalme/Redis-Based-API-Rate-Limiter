@@ -144,6 +144,28 @@ as platform-native services instead of compose services.
 > **Before deploying:** copy `.env.example` to `.env` and fill in values.
 > On every platform below, `PORT` is injected automatically by the platform.
 
+### Render (free tier, no credit card — recommended for portfolio demos)
+
+Deploys the compiled Node app on Render's free tier using the committed
+[`render.yaml`](render.yaml). No Docker build needed.
+
+1. Create a free **Upstash Redis** database (no credit card) at
+   `upstash.com` and copy its `rediss://...` connection URL.
+2. Push this repo to GitHub, then on Render go to **New → Blueprint** and
+   connect the repo (edit the `repo` URL in `render.yaml` or pick it in the
+   dashboard).
+3. Render prompts for the `REDIS_URL` value — paste the Upstash URL
+   (`REDIS_TLS` is already set to `true`).
+4. Deploy. You get a URL like `https://rate-limiter.onrender.com`.
+
+Free-tier limits to expect:
+- The service **spins down after 15 minutes** of inactivity and takes ~30s to
+  wake on the next request. Add a free [UptimeRobot](https://uptimerobot.com)
+  monitor hitting `/health` every 5 minutes to keep it warm.
+- `PORT`, `NODE_ENV`, `REDIS_URL`, `REDIS_TLS`, `RATE_LIMIT_STRATEGY`,
+  `LOG_LEVEL` are set in the blueprint; nothing else is required.
+- Prometheus/Grafana remain local-only — the app still exposes `/metrics`.
+
 ### Railway (full stack, closest to docker-compose)
 
 Railway runs the `Dockerfile` directly and lets you add each service as its own

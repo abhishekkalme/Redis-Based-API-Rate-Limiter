@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: rate-limiter
+    runtime: node
+    # Replace with your GitHub repo URL (or remove and select the repo in the Render dashboard)
+    repo: https://github.com/YOUR_GITHUB_USERNAME/advanced-rate-limiter
+    plan: free
+    buildCommand: npm run build
+    startCommand: node dist/index.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: REDIS_TLS
+        value: "true"
+      - key: REDIS_URL
+        sync: false
+      - key: RATE_LIMIT_STRATEGY
+        value: token-bucket
+      - key: LOG_LEVEL
+        value: info
