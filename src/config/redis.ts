@@ -5,19 +5,30 @@ import { logger } from '../monitoring/logger';
 let client: RedisClientType | null = null;
 let isConnected = false;
 
+function redactedTarget(url: string): string {
+  try {
+    const u = new URL(url);
+    return `${u.protocol}//${u.host}`;
+  } catch {
+    return '<unparseable url>';
+  }
+}
+
 export async function getRedisClient(): Promise<RedisClientType> {
   if (client && isConnected) return client;
+
+  logger.info({ target: redactedTarget(appConfig.redisUrl) }, 'Connecting to Redis');
 
   client = createClient({
     url: appConfig.redisUrl,
     socket: {
       ...(appConfig.redisEnableTls ? { tls: {} as any } : {}),
-      reconnectStrategy: (retries: number) => Math.min(retries * 100, 3000),
+      connectTimeout: 5000,
     } as any,
   });
 
   client.on('error', (err) => {
-    logger.error({ err }, 'Redis client error');
+    logger.error({ err, target: redactedTarget(appConfig.redisUrl) }, 'Redis client error');
     isConnected = false;
   });
 
@@ -27,6 +38,7 @@ export async function getRedisClient(): Promise<RedisClientType> {
   });
 
   client.on('end', () => {
+    logger.warn('Redis connection ended');
     isConnected = false;
   });
 
@@ -34,7 +46,7 @@ export async function getRedisClient(): Promise<RedisClientType> {
     await client.connect();
     isConnected = true;
   } catch (err) {
-    logger.error({ err }, 'Failed to connect to Redis, using memory fallback');
+    logger.error({ err, target: redactedTarget(appConfig.redisUrl) }, 'Failed to connect to Redis, using memory fallback');
     isConnected = false;
   }
 
