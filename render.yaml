@@ -2,8 +2,7 @@ services:
   - type: web
     name: rate-limiter
     runtime: node
-    # Replace with your GitHub repo URL (or remove and select the repo in the Render dashboard)
-    repo: https://github.com/YOUR_GITHUB_USERNAME/advanced-rate-limiter
+    repo: https://github.com/abhishekkalme/Redis-Based-API-Rate-Limiter
     plan: free
     buildCommand: npm run build
     startCommand: node dist/index.js
