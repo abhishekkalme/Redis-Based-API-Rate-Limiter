@@ -89,7 +89,7 @@ async function fetchHealth() {
     const text = document.getElementById('healthText');
     const storageBadge = document.getElementById('storageBadge');
 
-    storageBadge.textContent = `storage: ${d.rateLimiter.storage}`;
+    storageBadge.textContent = `storage: ${d.rateLimiter.storage} · redis: ${d.rateLimiter.redis}`;
 
     if (d.status === 'ok') {
       dot.className = 'health-dot green';

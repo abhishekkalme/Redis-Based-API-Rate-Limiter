@@ -147,11 +147,12 @@ export class RateLimiterMiddleware {
     };
   }
 
-  async healthCheck(): Promise<{ ok: boolean; storage: string; strategies: string[] }> {
+  async healthCheck(): Promise<{ ok: boolean; storage: string; strategies: string[]; redis: string }> {
     return {
       ok: this.storage?.isAvailable() ?? false,
       storage: this.storage?.constructor.name ?? 'not initialized',
       strategies: Array.from(this.strategies.keys()),
+      redis: isRedisAvailable() ? 'connected' : 'disconnected',
     };
   }
 
